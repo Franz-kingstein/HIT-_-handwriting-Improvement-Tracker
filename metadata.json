@@ -1,0 +1,7 @@
+{
+  "name": "HIT - Handwriting improvement tracker",
+  "description": "An advanced handwriting tracking and improvement app that uses AI to analyze photos of your writing, providing personalized feedback, dynamic exercises, and detailed progress tracking.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
