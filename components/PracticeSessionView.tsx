@@ -131,8 +131,10 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
       const wordCount = prompt.split(/\s+/).filter(w => w.length > 0).length;
       const result = await analyzeHandwriting(photo, timer, wordCount, isSpeedMode);
       onComplete(photo, result, isSpeedMode);
-    } catch (error) {
-      alert("Analysis failed. Please try a clearer photo.");
+    } catch (error: any) {
+      console.error("Analysis error:", error);
+      const msg = error?.message || 'Unknown error';
+      alert(`Analysis failed: ${msg}`);
       setIsAnalyzing(false);
     }
   };
