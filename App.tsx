@@ -90,11 +90,32 @@ const App: React.FC = () => {
     setIsGuest(false);
   };
 
-  const handleFinishPractice = (photo: string, analysis: AnalysisResult, isSpeedMode: boolean) => {
+  const createThumbnail = (dataUrl: string, maxSize = 200, quality = 0.5): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > h) { h = Math.round((h * maxSize) / w); w = maxSize; }
+        else { w = Math.round((w * maxSize) / h); h = maxSize; }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(dataUrl); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  };
+
+  const handleFinishPractice = async (photo: string, analysis: AnalysisResult, isSpeedMode: boolean) => {
+    const thumbnail = await createThumbnail(photo);
     const newSession: PracticeSession = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
-      photoUrl: photo,
+      photoUrl: thumbnail,
       analysis: analysis,
       isSpeedMode: isSpeedMode
     };
