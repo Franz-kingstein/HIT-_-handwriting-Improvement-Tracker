@@ -7,9 +7,10 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 interface DashboardProps {
   stats: UserStats;
   onStartPractice: () => void;
+  userName?: string;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ stats, onStartPractice }) => {
+const Dashboard: React.FC<DashboardProps> = ({ stats, onStartPractice, userName }) => {
   const chartData = useMemo(() => 
     [...stats.history].reverse().map(session => ({
       date: new Date(session.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
@@ -49,7 +50,7 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, onStartPractice }) => {
     <div className="p-6 space-y-8 animate-in fade-in duration-500 pb-12">
       <section className="flex justify-between items-start">
         <div>
-          <h2 className="text-3xl font-bold text-royal cursive-font">Greetings, Scribe</h2>
+          <h2 className="text-3xl font-bold text-royal cursive-font">Greetings, {userName || 'Scribe'}</h2>
           <div className="flex items-center gap-2 mt-1">
             <span className="bg-royal text-white text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded">
               {getMasteryLevel(stats.averageScore)}
