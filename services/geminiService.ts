@@ -8,6 +8,32 @@ const TEXT_MODEL = 'gemini-2.0-flash';
 const VISION_MODEL = 'gemini-2.0-flash';
 
 /**
+ * Retry wrapper for API calls that hit rate limits.
+ * Waits and retries up to maxRetries times.
+ */
+const withRetry = async <T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> => {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      const errorMsg = typeof error?.message === 'string' ? error.message : JSON.stringify(error);
+      const isRateLimit = errorMsg.includes('429') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota');
+      
+      if (isRateLimit && attempt < maxRetries) {
+        // Extract retry delay from error or default to 20s
+        const delayMatch = errorMsg.match(/retry\s*(?:in\s*)?([\d.]+)s/i);
+        const delay = delayMatch ? Math.ceil(parseFloat(delayMatch[1])) * 1000 + 1000 : 20000;
+        console.warn(`Rate limited. Retrying in ${delay / 1000}s... (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error('Max retries exceeded');
+};
+
+/**
  * Generates a fresh, dynamic prompt based on mode.
  */
 export const generateDynamicPrompt = async (mode: 'sentence' | 'paragraph', focusLetters?: string[]): Promise<string> => {
@@ -16,14 +42,14 @@ export const generateDynamicPrompt = async (mode: 'sentence' | 'paragraph', focu
     : "Generate a sophisticated, substantial paragraph (approx 180-250 words) about art, history, or philosophy for deep handwriting practice. Ensure the vocabulary is varied and elegant.";
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: TEXT_MODEL,
       contents: [{ 
         parts: [{ 
           text: `${promptText} ${focusLetters ? `Try to include words with these letters: ${focusLetters.join(', ')}.` : ''} Return ONLY the text of the prompt without any introductory remarks.` 
         }] 
       }],
-    });
+    }));
 
     return response.text.trim();
   } catch (error: any) {
@@ -50,7 +76,7 @@ export const analyzeHandwriting = async (
     throw new Error("Image is too large. Please try a lower resolution photo.");
   }
 
-  const response = await ai.models.generateContent({
+  const response = await withRetry(() => ai.models.generateContent({
     model: VISION_MODEL,
     contents: {
       parts: [
@@ -103,7 +129,7 @@ export const analyzeHandwriting = async (
         required: ["overallScore", "styleDetected", "metrics", "suggestedExercises", "transcription"]
       }
     }
-  });
+  }));
 
   try {
     const data = JSON.parse(response.text);

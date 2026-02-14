@@ -134,7 +134,11 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
     } catch (error: any) {
       console.error("Analysis error:", error);
       const msg = error?.message || 'Unknown error';
-      alert(`Analysis failed: ${msg}`);
+      if (msg.includes('429') || msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED')) {
+        alert("Rate limit reached. The app will auto-retry — please tap 'Run Analysis' again in 20 seconds.");
+      } else {
+        alert(`Analysis failed: ${msg}`);
+      }
       setIsAnalyzing(false);
     }
   };
