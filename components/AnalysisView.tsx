@@ -9,8 +9,14 @@ interface AnalysisViewProps {
 }
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ analysis, photo, onDone }) => {
+  // Defensive defaults in case analysis is missing fields
+  const overallScore = typeof analysis?.overallScore === 'number' ? analysis.overallScore : 0;
+  const styleDetected = analysis?.styleDetected || 'Handwriting';
+  const metrics = Array.isArray(analysis?.metrics) ? analysis.metrics : [];
+  const suggestedExercises = Array.isArray(analysis?.suggestedExercises) ? analysis.suggestedExercises : [];
+
   // Simulate comparison logic
-  const isBetter = useMemo(() => analysis.overallScore > 70, [analysis.overallScore]);
+  const isBetter = useMemo(() => overallScore > 70, [overallScore]);
 
   return (
     <div className="p-6 space-y-8 animate-in fade-in slide-in-from-bottom duration-500 pb-32">
@@ -32,24 +38,24 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ analysis, photo, onDone }) 
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
-            <span className="text-6xl font-black text-royal tracking-tighter">{analysis.overallScore}</span>
+            <span className="text-6xl font-black text-royal tracking-tighter">{overallScore}</span>
             <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] -mt-1">Mastery Score</span>
           </div>
         </div>
         
         <div className="space-y-2">
-          <h2 className="text-2xl font-black text-royal capitalize flex items-center justify-center gap-2">
-            <span>{analysis.styleDetected} Analysis</span>
+            <h2 className="text-2xl font-black text-royal capitalize flex items-center justify-center gap-2">
+            <span>{styleDetected} Analysis</span>
             {isBetter && <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full uppercase tracking-tighter">Growth Detected</span>}
           </h2>
           <div className="flex justify-center gap-3">
             <div className="bg-white shadow-sm px-4 py-2 rounded-2xl border border-slate-100">
                <span className="text-[9px] font-black text-slate-400 block uppercase tracking-widest mb-1">Velocity</span>
-               <span className="text-sm font-black text-royal">{analysis.wpm || '--'} WPM</span>
+               <span className="text-sm font-black text-royal">{analysis?.wpm ?? '--'} WPM</span>
             </div>
             <div className="bg-white shadow-sm px-4 py-2 rounded-2xl border border-slate-100">
                <span className="text-[9px] font-black text-slate-400 block uppercase tracking-widest mb-1">Pacing</span>
-               <span className="text-sm font-black text-royal">{analysis.timeTakenSeconds || '--'}s</span>
+               <span className="text-sm font-black text-royal">{analysis?.timeTakenSeconds ?? '--'}s</span>
             </div>
           </div>
         </div>
@@ -62,7 +68,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ analysis, photo, onDone }) 
             <span className="text-[8px] font-bold text-royal bg-cream px-2 py-1 rounded-full border border-royal/10">AI SCAN: ACTIVE</span>
           </div>
           <div className="space-y-8">
-            {analysis.metrics.map((metric, idx) => (
+            {metrics.map((metric, idx) => (
               <div key={idx} className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-royal text-sm tracking-tight">{metric.label}</span>
@@ -85,7 +91,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ analysis, photo, onDone }) 
         <section className="space-y-4 px-2">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">Recommended Drills</h3>
           <div className="grid grid-cols-1 gap-3">
-            {analysis.suggestedExercises.map((ex, idx) => (
+            {suggestedExercises.map((ex, idx) => (
               <div key={idx} className="bg-cream border border-royal/5 p-5 rounded-[1.5rem] flex items-center gap-5 shadow-sm hover:translate-x-1 transition-transform cursor-pointer">
                 <div className="bg-royal text-white w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 shadow-lg shadow-royal/20">
                   {idx + 1}

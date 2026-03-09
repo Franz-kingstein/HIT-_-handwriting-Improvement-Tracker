@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { analyzeHandwriting, generateDictation, decodeAudioData, generateDynamicPrompt } from '../services/geminiService';
+import { generateDictation, analyzeHandwriting, generateDynamicPrompt } from '../services/geminiService';
 import { AnalysisResult } from '../types';
 import { ICONS } from '../constants';
 
@@ -19,7 +19,7 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<number | null>(null);
 
@@ -64,14 +64,18 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
   const playDictation = async () => {
     setIsAudioLoading(true);
     try {
-      const audioBytes = await generateDictation(prompt, isSpeedMode ? 'fast' : 'normal');
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-      const buffer = await decodeAudioData(audioBytes, audioCtx);
-      const source = audioCtx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioCtx.destination);
-      source.start();
-      handleStartWriting();
+      const encoded = await generateDictation(prompt, isSpeedMode ? 'fast' : 'normal');
+      const text = new TextDecoder().decode(encoded);
+      // Use browser TTS to speak the generated text
+      if ('speechSynthesis' in window) {
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = isSpeedMode ? 1.4 : 1.0;
+        utter.onstart = () => handleStartWriting();
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utter);
+      } else {
+        alert('Speech synthesis not supported in this browser.');
+      }
     } catch (e) {
       alert("Failed to play dictation.");
     } finally {
@@ -125,7 +129,7 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
   };
 
   const handleAnalyze = async () => {
-    if (!photo) return;
+    if (!photo || isAnalyzing) return;
     setIsAnalyzing(true);
     try {
       const wordCount = prompt.split(/\s+/).filter(w => w.length > 0).length;
@@ -134,8 +138,8 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
     } catch (error: any) {
       console.error("Analysis error:", error);
       const msg = error?.message || 'Unknown error';
-      if (msg.includes('429') || msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED')) {
-        alert("Rate limit reached. The app will auto-retry — please tap 'Run Analysis' again in 20 seconds.");
+      if (msg.includes('rate-limited') || msg.includes('429') || msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED')) {
+        alert("Gemma model is rate-limited. Try again in ~20s or add your own OpenRouter API key for higher limits.");
       } else {
         alert(`Analysis failed: ${msg}`);
       }
@@ -170,13 +174,13 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
 
       <div className="space-y-3">
         <div className="flex gap-2 bg-slate-200/40 p-1 rounded-[1rem]">
-          <button 
+          <button
             onClick={() => setPracticeMode('sentence')}
             className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${practiceMode === 'sentence' ? 'bg-royal text-white shadow-sm' : 'text-slate-400'}`}
           >
             Quick Session
           </button>
-          <button 
+          <button
             onClick={() => setPracticeMode('paragraph')}
             className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${practiceMode === 'paragraph' ? 'bg-royal text-white shadow-sm' : 'text-slate-400'}`}
           >
@@ -185,13 +189,13 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
         </div>
 
         <div className="flex gap-2 bg-slate-200/40 p-1 rounded-[1rem]">
-          <button 
+          <button
             onClick={() => setIsSpeedMode(false)}
             className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${!isSpeedMode ? 'bg-royal text-white shadow-sm' : 'text-slate-400'}`}
           >
             Precision Focus
           </button>
-          <button 
+          <button
             onClick={() => setIsSpeedMode(true)}
             className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${isSpeedMode ? 'bg-royal text-white shadow-sm' : 'text-slate-400'}`}
           >
@@ -219,9 +223,9 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
             </p>
           )}
         </div>
-        
+
         {isSpeedMode && !isLoadingPrompt && (
-          <button 
+          <button
             onClick={playDictation}
             disabled={isAudioLoading}
             className="mt-6 flex items-center justify-center gap-2 text-royal font-bold text-[11px] bg-cream w-full py-3 rounded-xl border border-royal/10 hover:bg-royal hover:text-white transition-all disabled:opacity-50 uppercase tracking-widest"
@@ -234,36 +238,36 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
       {!photo ? (
         <div className="space-y-4">
           {!isTimerRunning && !isSpeedMode && !isLoadingPrompt && (
-             <button 
-                onClick={handleStartWriting}
-                className="w-full py-4 rounded-[1.5rem] border-2 border-royal text-royal font-black uppercase text-[11px] tracking-widest hover:bg-royal hover:text-white transition-all shadow-sm"
-             >
-               Start Practice Timer
-             </button>
+            <button
+              onClick={handleStartWriting}
+              className="w-full py-4 rounded-[1.5rem] border-2 border-royal text-royal font-black uppercase text-[11px] tracking-widest hover:bg-royal hover:text-white transition-all shadow-sm"
+            >
+              Start Practice Timer
+            </button>
           )}
 
           {isTimerRunning && (
-             <div className="flex gap-2">
-               <button 
-                  onClick={handleStopWriting}
-                  className="flex-1 py-4 rounded-[1.5rem] border-2 border-red-400 text-red-500 font-black uppercase text-[11px] tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2"
-               >
-                 <span className="w-2 h-2 bg-red-400 rounded-sm"></span>
-                 Stop — {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
-               </button>
-               <button 
-                  onClick={() => { setTimer(0); }}
-                  className="py-4 px-5 rounded-[1.5rem] border-2 border-slate-300 text-slate-400 font-black uppercase text-[11px] tracking-widest hover:bg-slate-500 hover:text-white hover:border-slate-500 transition-all shadow-sm flex items-center justify-center gap-2"
-               >
-                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                 </svg>
-                 Reset
-               </button>
-             </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleStopWriting}
+                className="flex-1 py-4 rounded-[1.5rem] border-2 border-red-400 text-red-500 font-black uppercase text-[11px] tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2"
+              >
+                <span className="w-2 h-2 bg-red-400 rounded-sm"></span>
+                Stop — {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
+              </button>
+              <button
+                onClick={() => { setTimer(0); }}
+                className="py-4 px-5 rounded-[1.5rem] border-2 border-slate-300 text-slate-400 font-black uppercase text-[11px] tracking-widest hover:bg-slate-500 hover:text-white hover:border-slate-500 transition-all shadow-sm flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reset
+              </button>
+            </div>
           )}
 
-          <div 
+          <div
             onClick={() => {
               if (!isTimerRunning && !photo) handleStartWriting();
               fileInputRef.current?.click();
@@ -277,13 +281,13 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
               <p className="text-slate-300 text-[8px] uppercase mt-2 font-bold">HIT AI will scan for improvements</p>
             </div>
           </div>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            accept="image/*" 
-            capture="environment" 
-            className="hidden" 
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            capture="environment"
+            className="hidden"
           />
         </div>
       ) : (
@@ -291,7 +295,7 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
           <div className="relative aspect-square bg-slate-900 rounded-[2rem] overflow-hidden shadow-2xl border border-slate-800">
             <img src={photo} alt="Practice Capture" className="w-full h-full object-cover opacity-80" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
-            <button 
+            <button
               onClick={() => { setPhoto(null); setTimer(0); }}
               className="absolute top-4 right-4 bg-white text-royal px-4 py-2 rounded-full text-[10px] font-black uppercase shadow-lg active:scale-90 transition-transform"
             >
@@ -308,8 +312,8 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
               </div>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={handleAnalyze}
             className="w-full bg-royal text-white py-5 rounded-[1.5rem] font-bold shadow-xl transition-all flex items-center justify-center gap-3 hover:brightness-110 active:scale-95 text-sm uppercase tracking-widest"
           >
