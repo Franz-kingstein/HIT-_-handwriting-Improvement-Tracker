@@ -1,7 +1,13 @@
 import { GoogleGenAI } from '@google/genai';
 import { AnalysisResult } from '../types';
 
-const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY as string | undefined;
+const getApiKey = () => {
+  try { return (import.meta as any).env?.VITE_GEMINI_API_KEY; } catch (e) { }
+  try { return (process.env as any).GEMINI_API_KEY; } catch (e) { }
+  try { return (process.env as any).API_KEY; } catch (e) { }
+  return undefined;
+};
+const apiKey = getApiKey();
 
 let ai: GoogleGenAI | null = null;
 if (apiKey) {
