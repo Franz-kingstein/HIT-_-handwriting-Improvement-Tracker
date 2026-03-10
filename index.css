@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --color-royal: #1A3A5A;
+  --color-cream: #FAF3E0;
+  --color-soft: #F6F4F0;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-soft);
+  }
+}
+
+.cursive-font { font-family: 'Dancing Script', cursive; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

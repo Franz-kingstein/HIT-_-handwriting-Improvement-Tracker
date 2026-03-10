@@ -2,11 +2,15 @@ import { GoogleGenAI } from '@google/genai';
 import { AnalysisResult } from '../types';
 
 const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY as string | undefined;
-if (!apiKey) throw new Error("VITE_GEMINI_API_KEY is not defined in .env");
 
-const ai = new GoogleGenAI({ apiKey });
+let ai: GoogleGenAI | null = null;
+if (apiKey) {
+  ai = new GoogleGenAI({ apiKey });
+}
 
 export async function generateDynamicPrompt(mode: 'sentence' | 'paragraph', focusLetters?: string[]): Promise<string> {
+  if (!ai) throw new Error("VITE_GEMINI_API_KEY is not defined in .env. Setup your api key in Netlify environment variables.");
+
   const prompt = mode === 'sentence'
     ? 'Generate a single, elegant, and inspirational sentence for cursive handwriting practice (approx 15-20 words).'
     : 'Generate a sophisticated, substantial paragraph (approx 180-250 words) about art, history, or philosophy for deep handwriting practice. Ensure the vocabulary is varied and elegant.';
@@ -26,6 +30,8 @@ export async function generateDynamicPrompt(mode: 'sentence' | 'paragraph', focu
 }
 
 export async function analyzeHandwriting(base64Image: string, timeTakenSeconds: number, wordCount: number, isSpeedMode: boolean): Promise<AnalysisResult> {
+  if (!ai) throw new Error("VITE_GEMINI_API_KEY is not defined in .env. Setup your api key in Netlify environment variables.");
+
   const wpm = Math.round((wordCount / (timeTakenSeconds / 60)) || 0);
   const prompt = `Analyze this image of handwriting ${isSpeedMode ? '(Speed Writing Mode)' : ''}.
 Metrics: Total Time ${timeTakenSeconds}s, Speed: ${wpm} WPM.
