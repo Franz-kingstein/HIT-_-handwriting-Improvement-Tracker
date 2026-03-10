@@ -20,7 +20,8 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<number | null>(null);
 
   const fetchPrompt = async () => {
@@ -267,26 +268,50 @@ const PracticeSessionView: React.FC<PracticeSessionViewProps> = ({ onComplete, o
             </div>
           )}
 
-          <div
-            onClick={() => {
-              if (!isTimerRunning && !photo) handleStartWriting();
-              fileInputRef.current?.click();
-            }}
-            className="aspect-square bg-white rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-royal transition-all group overflow-hidden relative"
-          >
-            <div className="absolute inset-0 bg-royal/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <ICONS.Camera className="w-12 h-12 text-slate-300 group-hover:text-royal transition-all group-hover:scale-110" />
-            <div className="text-center px-8 z-10">
-              <p className="text-slate-400 font-black uppercase text-[10px] tracking-widest">Capture Submission</p>
-              <p className="text-slate-300 text-[8px] uppercase mt-2 font-bold">HIT AI will scan for improvements</p>
+          <div className="flex gap-4">
+            <div
+              onClick={() => {
+                if (!isTimerRunning && !photo) handleStartWriting();
+                cameraInputRef.current?.click();
+              }}
+              className="flex-1 py-8 bg-white rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-royal transition-all group overflow-hidden relative"
+            >
+              <div className="absolute inset-0 bg-royal/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <ICONS.Camera className="w-10 h-10 text-slate-300 group-hover:text-royal transition-all group-hover:scale-110" />
+              <div className="text-center z-10">
+                <p className="text-slate-400 font-black uppercase text-[10px] tracking-widest">Camera</p>
+              </div>
+            </div>
+            <div
+              onClick={() => {
+                if (!isTimerRunning && !photo) handleStartWriting();
+                galleryInputRef.current?.click();
+              }}
+              className="flex-1 py-8 bg-white rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-royal transition-all group overflow-hidden relative"
+            >
+              <div className="absolute inset-0 bg-royal/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <svg className="w-10 h-10 text-slate-300 group-hover:text-royal transition-all group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0V16m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <div className="text-center z-10">
+                <p className="text-slate-400 font-black uppercase text-[10px] tracking-widest">Gallery</p>
+              </div>
             </div>
           </div>
+          <p className="text-center text-slate-300 text-[8px] uppercase mt-2 font-bold">HIT AI will scan for improvements</p>
           <input
             type="file"
-            ref={fileInputRef}
+            ref={cameraInputRef}
             onChange={handleFileChange}
             accept="image/*"
             capture="environment"
+            className="hidden"
+          />
+          <input
+            type="file"
+            ref={galleryInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
             className="hidden"
           />
         </div>
